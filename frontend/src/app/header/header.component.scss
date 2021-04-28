@@ -1,0 +1,21 @@
+.angular-logo {
+  margin: 0 4px 3px 0;
+  height: 35px;
+  vertical-align: middle;
+}
+
+.fill-remaining-space {
+  flex: 1 1 auto;
+}
+
+.mat-toolbar.mat-primary {
+  background: teal;
+  color: #fff;
+}
+
+button:focus,
+button:active:focus,
+button.active:focus {
+  outline: none !important;
+  outline-style: none !important;
+}
