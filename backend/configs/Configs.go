@@ -3,7 +3,6 @@ package configs
 import (
 	"github.com/tkanos/gonfig"
 	"log"
-	"os"
 	"path/filepath"
 )
 
@@ -30,7 +29,10 @@ func InitConfig() {
 
 func NewConfig() *Configuration {
 	var config Configuration
-	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
+	dir, err := filepath.Abs(filepath.Dir("."))
+	if err != nil {
+            panic(err)
+        }
 	configFilePath := dir+"/configs/config.json"
 	log.Printf("Config file path: %s", configFilePath)
 	err = gonfig.GetConf(configFilePath, &config)
