@@ -1,10 +1,12 @@
 package helpers
 
 import (
+	"banking-app/backend/configs"
+	"banking-app/backend/interfaces"
 	"github.com/jinzhu/gorm"
-	"go-bank-backend/interfaces"
-	"golang.org/x/crypto/bcrypt"
 	_ "github.com/lib/pq"
+	"golang.org/x/crypto/bcrypt"
+	"log"
 	"regexp"
 )
 
@@ -22,7 +24,9 @@ func HashAndSalt(pass []byte) string {
 }
 
 func ConnectDB() *gorm.DB {
-	db, err := gorm.Open("postgres", "host=127.0.0.1 port=5432 user=admin dbname=banking password=1 sslmode=disable")
+	dbInfo := "host=" + configs.Config.DbHost +" port=" + configs.Config.DbPort + " user=" + configs.Config.DbUser +" dbname=" + configs.Config.DbName + " password=" + configs.Config.DbPassword +" sslmode=disable"
+	log.Printf("DB info: %s", dbInfo)
+	db, err := gorm.Open("postgres", dbInfo)
 	HandleErr(err)
 	return db
 }
@@ -50,4 +54,6 @@ func Validation(values []interfaces.Validation) bool{
 
 	return true
 }
+
+
 

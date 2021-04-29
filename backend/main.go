@@ -1,11 +1,15 @@
 package main
 
 import (
-	"go-bank-backend/api"
-	"go-bank-backend/migrations"
+	"banking-app/backend/api"
+	"banking-app/backend/configs"
+	"banking-app/backend/migrations"
 )
 
 func main() {
+	configs.InitConfig()
 	migrations.Migrate()
 	api.StartApi()
 }
+
+

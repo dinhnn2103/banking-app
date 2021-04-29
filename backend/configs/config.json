@@ -1,0 +1,8 @@
+{
+  "DbName": "banking",
+  "DbUser": "admin",
+  "DbPassword": "1",
+  "DbHost": "127.0.0.1",
+  "DbPort": "5432"
+}
+

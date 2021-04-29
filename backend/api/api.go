@@ -3,12 +3,12 @@ package api
 import (
 	"encoding/json"
 	"fmt"
-	"go-bank-backend/interfaces"
+	"banking-app/backend/interfaces"
 	"io/ioutil"
 	"log"
 	"net/http"
-	"go-bank-backend/helpers"
-	"go-bank-backend/users"
+	"banking-app/backend/helpers"
+	"banking-app/backend/users"
 	"github.com/gorilla/mux"
 )
 

@@ -1,9 +1,9 @@
 package migrations
 
 import (
+	"banking-app/backend/helpers"
+	"banking-app/backend/interfaces"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
-	"go-bank-backend/helpers"
-	"go-bank-backend/interfaces"
 )
 
 func createAccounts() {

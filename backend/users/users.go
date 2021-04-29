@@ -2,8 +2,8 @@ package users
 
 import (
 	"time"
-	"go-bank-backend/helpers"
-	"go-bank-backend/interfaces"
+	"banking-app/backend/helpers"
+	"banking-app/backend/interfaces"
 	"github.com/dgrijalva/jwt-go"
 	"golang.org/x/crypto/bcrypt"
 )
