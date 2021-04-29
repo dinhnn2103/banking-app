@@ -21,7 +21,7 @@ func Register(username string, email string, pass string) map[string]interface{}
 		generatedPassword := helpers.HashAndSalt([]byte(pass))
 		user := &interfaces.User{Username: username, Email: email, Password: generatedPassword}
 		db.Create(&user)
-		account := &interfaces.Account{Type: "Daily Account", Name: string(username + "'s" + " account"), Balance: 0, UserID: user.ID}
+		account := &interfaces.Account{Type: "Daily Account", Name: username + "'s" + " account", Balance: 0, UserID: user.ID}
 		db.Create(&account)
 		defer db.Close()
 		var accounts []interfaces.ResponseAccount
@@ -30,7 +30,10 @@ func Register(username string, email string, pass string) map[string]interface{}
 		var response = prepareResponse(user, accounts)
 		return response
 	} else {
-		return map[string]interface{}{"message": "not valid values"}
+		return map[string]interface{}{
+			"message": "Cannot register, please check username & email & password",
+			"result": false,
+		}
 	}
 }
 
@@ -46,12 +49,18 @@ func Login(username string, pass string) map[string]interface{} {
 		user := &interfaces.User{}
 		// First check user exist or not
 		if db.Where("username = ? ", username).First(&user).RecordNotFound() {
-			return map[string]interface{}{"message": "User not found"}
+			return map[string]interface{}{
+				"message": "User not found",
+				"result": false,
+			}
 		}
 		// Password check
 		passErr := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(pass))
 		if passErr == bcrypt.ErrMismatchedHashAndPassword && passErr != nil {
-			return map[string]interface{}{"message": "Wrong password"}
+			return map[string]interface{}{
+				"message": "Wrong password",
+				"result": false,
+			}
 		}
 		// get user account info from db
 		var accounts []interfaces.ResponseAccount
@@ -85,7 +94,10 @@ func prepareResponse(user *interfaces.User, accounts []interfaces.ResponseAccoun
 	}
 
 	var token = prepareToken(user);
-	var response = map[string]interface{}{"message": "all is fine"}
+	var response = map[string]interface{}{
+		"message": "OK",
+		"result": true,
+	}
 	response["jwt"] = token
 	response["data"] = responseUser
 

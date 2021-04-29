@@ -18,11 +18,13 @@ type Configuration struct {
 
 var (
 	Config *Configuration
+	DBInfo string
 )
 
 func InitConfig() {
 	if Config == nil {
 		Config = NewConfig()
+		DBInfo = "host=" + Config.DbHost +" port=" + Config.DbPort + " user=" + Config.DbUser +" dbname=" + Config.DbName + " password=" + Config.DbPassword +" sslmode=disable"
 	}
 }
 

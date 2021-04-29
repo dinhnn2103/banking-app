@@ -1,6 +1,7 @@
 package api
 
 import (
+	"banking-app/backend/configs"
 	"encoding/json"
 	"fmt"
 	"banking-app/backend/interfaces"
@@ -29,11 +30,11 @@ func login(w http.ResponseWriter, r *http.Request) {
 	helpers.HandleErr(err)
 	login := users.Login(formattedBody.Username, formattedBody.Password)
 	// Check the response == all is fine or not
-	if login["message"] == "all is fine" {
+	if login["result"] == true {
 		resp := login
 		json.NewEncoder(w).Encode(resp)
 	} else {
-		resp := ErrResponse{Message: "Wrong username or password"}
+		resp := ErrResponse{Message: fmt.Sprintf("%v", login["message"])}
 		json.NewEncoder(w).Encode(resp)
 	}
 }
@@ -48,12 +49,11 @@ func register(w http.ResponseWriter, r *http.Request) {
 	helpers.HandleErr(err)
 	register := users.Register(formattedBody.Username, formattedBody.Email, formattedBody.Password)
 	// Prepare response
-	if register["message"] == "all is fine" {
+	if register["result"] == true {
 		resp := register
 		json.NewEncoder(w).Encode(resp)
-		// Handle error in else
 	} else {
-		resp := ErrResponse{Message: "Wrong username or password"}
+		resp := ErrResponse{Message: fmt.Sprintf("%v", register["message"])}
 		json.NewEncoder(w).Encode(resp)
 	}
 }
@@ -63,6 +63,7 @@ func StartApi() {
 	router := mux.NewRouter()
 	router.HandleFunc("/login", login).Methods("POST")
 	router.HandleFunc("/register", register).Methods("POST")
+	log.Printf("DB info: %s", configs.DBInfo)
 	fmt.Println("App is working on port :8888")
 	log.Fatal(http.ListenAndServe(":8888", router))
 }
