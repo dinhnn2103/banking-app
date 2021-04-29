@@ -4,6 +4,7 @@ import {BehaviorSubject, Observable, of} from 'rxjs';
 import {Router} from '@angular/router';
 import {LoginInfo} from '../../login/loginInfo';
 import jwtDecode from 'jwt-decode';
+import {ToastrService} from 'ngx-toastr';
 
 const httpOptions = {
   headers: new HttpHeaders({
@@ -35,7 +36,8 @@ export class UserService {
 
   constructor(
     private http: HttpClient,
-    private router: Router
+    private router: Router,
+    private toastr: ToastrService
   ) {
   }
 
@@ -80,7 +82,7 @@ export class UserService {
 
   login(loginInfo: LoginInfo): any {
 
-    this.http.post(`${this.url}login`, loginInfo, httpOptions).toPromise().then((res: any) => {
+    return this.http.post(`${this.url}login`, loginInfo, httpOptions).toPromise().then((res: any) => {
 
       if (res && res.jwt) {
         localStorage.setItem(TOKEN_NAME, res.jwt);
@@ -91,11 +93,14 @@ export class UserService {
         }
         this.loggedIn.next(true);
         this.router.navigateByUrl('');
-      } else if (res.Message) {
-        this.errorSubject.next(res.Message);
+      } else if (res.message) {
+        this.toastr.error('Authentication failed (Username / password invalid)');
+        console.log(res.message);
+        // this.errorSubject.next(res.message);
       }
 
     }).catch(err => {
+      this.toastr.error('Can\'t login, please check backend');
       console.log(err);
     });
   }
