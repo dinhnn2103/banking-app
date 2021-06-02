@@ -3,12 +3,12 @@ package main
 import (
 	"banking-app/backend/api"
 	"banking-app/backend/configs"
-	"banking-app/backend/migrations"
+	"banking-app/backend/database"
 )
 
 func main() {
 	configs.InitConfig()
-	migrations.Migrate()
+	database.InitDB()
 	api.StartApi()
 }
 

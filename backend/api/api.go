@@ -14,56 +14,63 @@ import (
 )
 
 type Login struct {
-	Username string
-	Password string
-}
-
-type ErrResponse struct {
-	Message string
+	AccountName string
+	AccountPass string
 }
 
 func login(w http.ResponseWriter, r *http.Request) {
-	body, err := ioutil.ReadAll(r.Body)
-	helpers.HandleErr(err)
+	log.Print("Hello I am from login api")
 	var formattedBody Login
-	err = json.Unmarshal(body, &formattedBody)
+	body := readBody(r)
+	err := json.Unmarshal(body, &formattedBody)
 	helpers.HandleErr(err)
-	login := users.Login(formattedBody.Username, formattedBody.Password)
+	login := users.Login(formattedBody.AccountName, formattedBody.AccountPass)
 	// Check the response == all is fine or not
-	if login["result"] == true {
-		resp := login
-		json.NewEncoder(w).Encode(resp)
-	} else {
-		resp := ErrResponse{Message: fmt.Sprintf("%v", login["message"])}
-		json.NewEncoder(w).Encode(resp)
-	}
+	apiResponse(login, w)
 }
 
 func register(w http.ResponseWriter, r *http.Request) {
-	// Read body
-	body, err := ioutil.ReadAll(r.Body)
-	helpers.HandleErr(err)
 	// Handle registration
 	var formattedBody interfaces.Register
-	err = json.Unmarshal(body, &formattedBody)
+	body := readBody(r)
+	err := json.Unmarshal(body, &formattedBody)
 	helpers.HandleErr(err)
 	register := users.Register(formattedBody.Username, formattedBody.Email, formattedBody.Password)
 	// Prepare response
-	if register["result"] == true {
-		resp := register
-		json.NewEncoder(w).Encode(resp)
-	} else {
-		resp := ErrResponse{Message: fmt.Sprintf("%v", register["message"])}
-		json.NewEncoder(w).Encode(resp)
-	}
+	apiResponse(register, w)
 }
 
 // Login API
 func StartApi() {
 	router := mux.NewRouter()
+	router.Use(helpers.PanicHandler)
 	router.HandleFunc("/login", login).Methods("POST")
 	router.HandleFunc("/register", register).Methods("POST")
+	router.HandleFunc("/user/{id}", getUser).Methods("GET")
 	log.Printf("DB info: %s", configs.DBInfo)
 	fmt.Println("App is working on port :8888")
 	log.Fatal(http.ListenAndServe(":8888", router))
+}
+
+func readBody(r *http.Request) []byte {
+	body, err := ioutil.ReadAll(r.Body)
+	helpers.HandleErr(err)
+	return body
+}
+
+func apiResponse(call map[string]interface{}, w http.ResponseWriter) {
+	if call["result"] == true {
+		resp := call
+		json.NewEncoder(w).Encode(resp)
+		// Handle error in else
+	} else {
+		resp := interfaces.ErrResponse{Message: fmt.Sprintf("%v", call["message"])}
+		json.NewEncoder(w).Encode(resp)
+	}
+}
+
+func getUser(w http.ResponseWriter, r *http.Request) {
+	auth := r.Header.Get("Authorization")
+	user := users.GetUser(auth)
+	apiResponse(user, w)
 }

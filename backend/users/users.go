@@ -1,6 +1,8 @@
 package users
 
 import (
+	"banking-app/backend/database"
+	"log"
 	"time"
 	"banking-app/backend/helpers"
 	"banking-app/backend/interfaces"
@@ -17,17 +19,10 @@ func Register(username string, email string, pass string) map[string]interface{}
 			{Value: pass, Valid: "password"},
 		})
 	if valid {
-		db := helpers.ConnectDB()
 		generatedPassword := helpers.HashAndSalt([]byte(pass))
-		user := &interfaces.User{Username: username, Email: email, Password: generatedPassword}
-		db.Create(&user)
-		account := &interfaces.Account{Type: "Daily Account", Name: username + "'s" + " account", Balance: 0, UserID: user.ID}
-		db.Create(&account)
-		defer db.Close()
-		var accounts []interfaces.ResponseAccount
-		respAccount := interfaces.ResponseAccount{ID: account.ID, Name: account.Name, Balance: int(account.Balance)}
-		accounts = append(accounts, respAccount)
-		var response = prepareResponse(user, accounts)
+		user := &interfaces.UserLoginInfo{Accountname: username, Email: email, Accountpass: generatedPassword}
+		database.DBconnection.Create(&user)
+		var response = prepareResponse(user, false)
 		return response
 	} else {
 		return map[string]interface{}{
@@ -39,23 +34,25 @@ func Register(username string, email string, pass string) map[string]interface{}
 
 func Login(username string, pass string) map[string]interface{} {
 	// Add validation to login function
+	log.Printf("accountName : %s", username)
+	log.Printf("accountPass : %s", pass)
 	isValid := helpers.Validation(
 		[]interfaces.Validation{
 			{Value: username, Valid: "username"},
 			{Value: pass, Valid: "password"},
 		})
 	if isValid {
-		db := helpers.ConnectDB()
-		user := &interfaces.User{}
+		user := &interfaces.UserLoginInfo{}
 		// First check user exist or not
-		if db.Where("username = ? ", username).First(&user).RecordNotFound() {
+		database.DBconnection.Raw("SELECT id, accountname, accountpass, email, token, expire FROM users WHERE accountName = ?", username).Scan(&user)
+		if user.Accountname == "" {
 			return map[string]interface{}{
 				"message": "User not found",
 				"result": false,
 			}
 		}
 		// Password check
-		passErr := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(pass))
+		passErr := bcrypt.CompareHashAndPassword([]byte(user.Accountpass), []byte(pass))
 		if passErr == bcrypt.ErrMismatchedHashAndPassword && passErr != nil {
 			return map[string]interface{}{
 				"message": "Wrong password",
@@ -63,17 +60,17 @@ func Login(username string, pass string) map[string]interface{} {
 			}
 		}
 		// get user account info from db
-		var accounts []interfaces.ResponseAccount
-		db.Table("accounts").Select("id, name, balance").Where("user_id = ? ", user.ID).Scan(&accounts)
-		// close db
-		defer db.Close()
-		return prepareResponse(user, accounts)
+		withToken := helpers.ValidateTokenOnly(user.Token)
+		if time.Now().Before(user.Expire) {
+			withToken = true
+		}
+		return prepareResponse(user, withToken)
 	} else {
 		return 	map[string]interface{}{"message": "Validation step: invalid values"}
 	}
 }
 
-func prepareToken(user *interfaces.User) string {
+func prepareToken(user *interfaces.UserLoginInfo) string {
 	tokenContent := jwt.MapClaims{
 		"user_id": user.ID,
 		"expiry": time.Now().Add(time.Minute * 60).Unix(),
@@ -85,22 +82,40 @@ func prepareToken(user *interfaces.User) string {
 	return token
 }
 
-func prepareResponse(user *interfaces.User, accounts []interfaces.ResponseAccount) map[string]interface{} {
-	responseUser := &interfaces.ResponseUser{
+func prepareResponse(user *interfaces.UserLoginInfo, withToken bool) map[string]interface{} {
+	responseUser := &interfaces.ResponseUser {
 		ID: user.ID,
-		Username: user.Username,
+		Username: user.Accountpass,
 		Email: user.Email,
-		Accounts: accounts,
 	}
-
-	var token = prepareToken(user);
 	var response = map[string]interface{}{
 		"message": "OK",
 		"result": true,
 	}
-	response["jwt"] = token
+	if withToken {
+		var token = prepareToken(user)
+		response["jwt"] = token
+	}
 	response["data"] = responseUser
 
 	return response
+}
+
+func GetUser(jwt string) map[string]interface{} {
+	isValid := helpers.ValidateTokenOnly(jwt)
+	if isValid {
+		user := &interfaces.UserLoginInfo{}
+		database.DBconnection.Raw("SELECT id, accountName, accountPass, email, token, expire FROM users WHERE token = ?", jwt).Scan(&user)
+		if user.Accountpass == "" {
+			return map[string]interface{}{
+				"message": "User not found",
+				"result": false,
+			}
+		}
+		var response = prepareResponse(user, false)
+		return response
+	} else {
+		return map[string]interface{}{"message": "Not valid token"}
+	}
 }
 
